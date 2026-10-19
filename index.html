@@ -1,0 +1,246 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+  <meta charset="UTF-8">
+  <title>Sistema de Notas Fiscais</title>
+  <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+  <style>
+    body { font-family: Arial, sans-serif; padding: 20px; max-width: 750px; margin: 0 auto; }
+    .campo { margin-bottom: 12px; }
+    .campo label { display: block; margin-bottom: 4px; font-weight: bold; }
+    .campo input { width: 100%; padding: 8px; box-sizing: border-box; }
+    .btn-cadastrar { background-color: #28a745; color: white; padding: 10px 15px; border: none; cursor: pointer; width: 100%; font-size: 16px; margin-top: 10px; font-weight: bold; }
+    .btn-ordenar { background-color: #007bff; color: white; padding: 6px 12px; border: none; cursor: pointer; border-radius: 4px; margin-bottom: 10px; }
+    .btn-limpar { background-color: #dc3545; color: white; padding: 6px 12px; border: none; cursor: pointer; border-radius: 4px; margin-bottom: 10px; }
+    .acoes-topo { display: flex; align-items: center; justify-content: space-between; }
+    table { width: 100%; border-collapse: collapse; margin-top: 10px; }
+    th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
+    th { background-color: #f4f4f4; }
+  </style>
+</head>
+<body>
+  <div id="app">
+    <h2>Cadastro de Nota Fiscal</h2>
+
+    <form @submit.prevent="cadastrarNota">
+      <div class="campo">
+        <label>Nº da Nota:</label>
+        <input 
+          type="text" 
+          inputmode="numeric"
+          pattern="[0-9]*"
+          v-model="form.numeroNota" 
+          @input="validarApenasNumeros"
+          placeholder="Ex: 1001" 
+          required 
+        />
+      </div>
+
+      <div class="campo">
+        <label>Nome do Cliente:</label>
+        <input type="text" v-model="form.cliente" placeholder="Ex: UneCont" required />
+      </div>
+
+      <div class="campo">
+        <label>Valor (R$):</label>
+        <input type="number" step="0.01" min="0" v-model="form.valor" placeholder="Ex: 150.00" required />
+      </div>
+
+      <div class="campo">
+        <label>Data de Emissão:</label>
+        <input type="date" v-model="form.dataEmissao" required />
+      </div>
+
+      <button type="submit" class="btn-cadastrar">Cadastrar</button>
+    </form>
+
+    <hr />
+
+    <h3>Notas Fiscais Cadastradas</h3>
+    
+    <div class="campo">
+      <input type="text" v-model="filtro" placeholder="Filtrar por cliente..." />
+    </div>
+
+    <div class="acoes-topo">
+      <button type="button" @click="ordemCrescente = !ordemCrescente" class="btn-ordenar">
+        Ordenar por valor: {{ ordemCrescente ? 'Crescente (▲)' : 'Decrescente (▼)' }}
+      </button>
+
+      <button type="button" @click="limparTodasNotas" class="btn-limpar" v-if="listaNotas.length > 0">
+        🗑️ Limpar Todas
+      </button>
+    </div>
+
+    <table>
+      <thead>
+        <tr>
+          <th>Nº Nota</th>
+          <th>Cliente</th>
+          <th>Valor</th>
+          <th>Data Emissão</th>
+          <th>Data/Hora Cadastro</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr v-for="nota in notasFiltradas" :key="nota.id || nota.numeroNota">
+          <td>{{ nota.numeroNota }}</td>
+          <td>{{ nota.cliente }}</td>
+          <td>{{ formatarExibicaoValor(nota) }}</td>
+          <td>{{ formatarData(nota.dataEmissao) }}</td>
+          <td>{{ formatarDataHora(nota.dataHoraCadastro) }}</td>
+        </tr>
+        <tr v-if="!notasFiltradas || notasFiltradas.length === 0">
+          <td colspan="5">Nenhuma nota encontrada.</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <script>
+    const { createApp } = Vue;
+    const API_URL = 'http://localhost:5062/api/notas';
+
+    createApp({
+      data() {
+        return {
+          listaNotas: [],
+          filtro: '',
+          ordemCrescente: true,
+          form: {
+            numeroNota: '',
+            cliente: '',
+            valor: '',
+            dataEmissao: ''
+          }
+        };
+      },
+      computed: {
+        notasFiltradas() {
+          const notas = Array.isArray(this.listaNotas) ? [...this.listaNotas] : [];
+          
+          return notas
+            .filter(nota => {
+              if (!nota) return false;
+              if (!this.filtro) return true;
+              const clienteNome = nota.cliente || '';
+              return clienteNome.toLowerCase().includes(this.filtro.toLowerCase());
+            })
+            .sort((a, b) => {
+              const valA = this.extrairValorNumerico(a);
+              const valB = this.extrairValorNumerico(b);
+              
+              if (valA !== valB) {
+                return this.ordemCrescente ? valA - valB : valB - valA;
+              }
+              
+              const numA = parseInt(a.numeroNota, 10) || 0;
+              const numB = parseInt(b.numeroNota, 10) || 0;
+              return this.ordemCrescente ? numA - numB : numB - numA;
+            });
+        }
+      },
+      mounted() {
+        this.buscarNotas();
+      },
+      methods: {
+        validarApenasNumeros(event) {
+          this.form.numeroNota = event.target.value.replace(/\D/g, '');
+        },
+        extrairValorNumerico(nota) {
+          if (!nota) return 0;
+          if (nota.valorFormatado) {
+            const limpo = nota.valorFormatado.replace(/[^\d,-]/g, '').replace(',', '.');
+            const num = parseFloat(limpo);
+            if (!isNaN(num)) return num;
+          }
+          const numDireto = parseFloat(nota.valor ?? nota.valorNota);
+          return isNaN(numDireto) ? 0 : numDireto;
+        },
+        formatarExibicaoValor(nota) {
+          if (nota && nota.valorFormatado) {
+            return nota.valorFormatado;
+          }
+          const num = this.extrairValorNumerico(nota);
+          return `R$ ${num.toFixed(2).replace('.', ',')}`;
+        },
+        formatarData(dataStr) {
+          if (!dataStr) return '';
+          if (dataStr.includes('/')) return dataStr;
+          const [ano, mes, dia] = dataStr.split('T')[0].split('-');
+          return `${dia}/${mes}/${ano}`;
+        },
+        formatarDataHora(dhStr) {
+          if (!dhStr) return '-';
+          if (dhStr.includes('/') || dhStr.includes(':')) return dhStr;
+          
+          try {
+            const d = new Date(dhStr);
+            if (isNaN(d.getTime())) return dhStr;
+            return d.toLocaleString('pt-BR', {
+              day: '2-digit',
+              month: '2-digit',
+              year: 'numeric',
+              hour: '2-digit',
+              minute: '2-digit',
+              second: '2-digit'
+            });
+          } catch {
+            return dhStr;
+          }
+        },
+        async buscarNotas() {
+          try {
+            const res = await fetch(API_URL);
+            if (res.ok) {
+              const dados = await res.json();
+              this.listaNotas = dados;
+            }
+          } catch (err) {
+            console.error('Erro ao carregar notas:', err);
+          }
+        },
+        async cadastrarNota() {
+          try {
+            const payload = {
+              numeroNota: this.form.numeroNota,
+              cliente: this.form.cliente,
+              valor: parseFloat(this.form.valor) || 0,
+              dataEmissao: this.form.dataEmissao
+            };
+
+            const res = await fetch(API_URL, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify(payload)
+            });
+
+            if (res.ok) {
+              await this.buscarNotas();
+              this.form = { numeroNota: '', cliente: '', valor: '', dataEmissao: '' };
+            } else {
+              alert('Erro ao cadastrar a nota na API.');
+            }
+          } catch (err) {
+            console.error('Erro ao enviar requisição:', err);
+          }
+        },
+        async limparTodasNotas() {
+          if (!confirm('Tem certeza de que deseja apagar todas as notas cadastradas?')) return;
+
+          try {
+            const res = await fetch(API_URL, { method: 'DELETE' });
+            if (res.ok) {
+              await this.buscarNotas();
+            } else {
+              alert('Erro ao limpar as notas no servidor.');
+            }
+          } catch (err) {
+            console.error('Erro ao enviar requisição DELETE:', err);
+          }
+        }
+      }
+    }).mount('#app');
+  </script>
+</body>
+</html>
