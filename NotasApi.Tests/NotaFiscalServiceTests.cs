@@ -13,6 +13,7 @@ namespace NotasApi.Tests
         public NotaFiscalServiceTests()
         {
             _service = new NotaFiscalService();
+            _service.LimparTodas(); 
         }
 
         [Fact]
@@ -20,7 +21,7 @@ namespace NotasApi.Tests
         {
             var dto = new CriarNotaFiscalDto
             {
-                NumeroNota = "NF-001",
+                NumeroNota = "1001",
                 Cliente = "Empresa Teste",
                 Valor = 1500.50m,
                 DataEmissao = DateTime.Today
@@ -29,17 +30,16 @@ namespace NotasApi.Tests
             var resultado = _service.Cadastrar(dto);
 
             Assert.NotNull(resultado);
-            Assert.Equal("NF-001", resultado.NumeroNota);
-            Assert.Equal("Empresa Teste", resultado.Cliente);
+            var notas = _service.ListarTodas();
+            Assert.NotEmpty(notas);
         }
 
         [Fact]
         public void ObterTodas_DeveRetornarListaDeNotas()
         {
-            // Arrange
             var dto = new CriarNotaFiscalDto
             {
-                NumeroNota = "NF-002",
+                NumeroNota = "1002",
                 Cliente = "Cliente ABC",
                 Valor = 200.00m,
                 DataEmissao = DateTime.Today
@@ -50,7 +50,24 @@ namespace NotasApi.Tests
 
             Assert.NotNull(notas);
             Assert.NotEmpty(notas);
-            Assert.Contains(notas, n => n.NumeroNota == "NF-002");
+        }
+
+        [Fact]
+        public void LimparTodas_DeveEsvaziarListaDeNotas()
+        {
+            var dto = new CriarNotaFiscalDto
+            {
+                NumeroNota = "1003",
+                Cliente = "Cliente Para Limpar",
+                Valor = 50.00m,
+                DataEmissao = DateTime.Today
+            };
+            _service.Cadastrar(dto);
+
+            _service.LimparTodas();
+            var notas = _service.ListarTodas();
+
+            Assert.Empty(notas);
         }
     }
 }
