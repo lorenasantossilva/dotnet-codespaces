@@ -6,5 +6,6 @@ namespace NotasApi.Services
     {
         NotaFiscalResponseDto Cadastrar(CriarNotaFiscalDto dto);
         IEnumerable<NotaFiscalResponseDto> ListarTodas();
-    }
+        void LimparTodas();
+    }   
 }

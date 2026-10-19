@@ -4,7 +4,7 @@ using NotasApi.DTOs;
 using NotasApi.Models;
 
 namespace NotasApi.Services
-{
+{   
     public class NotaFiscalService : INotaFiscalService
     {
         private static readonly ConcurrentBag<NotaFiscal> _notas = new();
@@ -48,6 +48,16 @@ namespace NotasApi.Services
                 DataEmissao = nota.DataEmissao.ToString("dd/MM/yyyy"),
                 DataHoraCadastro = nota.DataHoraCadastro.ToString("dd/MM/yyyy HH:mm:ss")
             };
+        }
+
+        public bool RemoverPorNumero(string numeroNota)
+        {
+            return false; 
+        }
+
+        public void LimparTodas()
+        {
+            while (_notas.TryTake(out _));
         }
     }
 }

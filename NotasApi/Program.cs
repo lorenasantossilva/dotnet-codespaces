@@ -2,23 +2,30 @@ using NotasApi.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
+builder.Services.AddControllers()
+    .AddJsonOptions(options =>
+    {
+        options.JsonSerializerOptions.PropertyNameCaseInsensitive = true;
+    });
+
+builder.Services.AddSingleton<INotaFiscalService, NotaFiscalService>();
+
 builder.Services.AddCors(options =>
 {
     options.AddPolicy("AllowAll", policy =>
     {
         policy.AllowAnyOrigin()
-              .AllowAnyHeader()
-              .AllowAnyMethod();
+              .AllowAnyMethod()
+              .AllowAnyHeader();
     });
 });
-
-builder.Services.AddControllers();
-
-builder.Services.AddSingleton<INotaFiscalService, NotaFiscalService>();
 
 var app = builder.Build();
 
 app.UseCors("AllowAll");
+
+app.UseAuthorization();
+
 app.MapControllers();
 
 app.Run();

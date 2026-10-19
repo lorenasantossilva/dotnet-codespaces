@@ -7,7 +7,7 @@ namespace NotasApi.Controllers
     [ApiController]
     [Route("api/notas")]
     public class NotasController : ControllerBase
-    {
+    {   
         private readonly INotaFiscalService _service;
 
         public NotasController(INotaFiscalService service)
@@ -35,6 +35,13 @@ namespace NotasApi.Controllers
         public IActionResult Options()
         {
             return Ok();
+        }
+
+        [HttpDelete]
+        public IActionResult LimparTodas()
+        {
+            _service.LimparTodas();
+            return NoContent(); // HTTP 204
         }
     }
 }

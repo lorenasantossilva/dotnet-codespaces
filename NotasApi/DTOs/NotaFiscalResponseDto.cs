@@ -8,4 +8,4 @@ namespace NotasApi.DTOs
         public string DataEmissao { get; set; } = string.Empty;
         public string DataHoraCadastro { get; set; } = string.Empty;
     }
-}
+}   

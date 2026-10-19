@@ -8,5 +8,5 @@ namespace NotasApi.Models
         public decimal Valor { get; set; }
         public DateTime DataEmissao { get; set; }
         public DateTime DataHoraCadastro { get; set; } = DateTime.UtcNow;
-    }
+    }   
 }
