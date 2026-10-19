@@ -7,6 +7,6 @@ namespace NotasApi.Models
         public string Cliente { get; set; } = string.Empty;
         public decimal Valor { get; set; }
         public DateTime DataEmissao { get; set; }
-        public DateTime DataHoraCadastro { get; set; } = DateTime.Now;
+        public DateTime DataHoraCadastro { get; set; } = DateTime.UtcNow;
     }
 }

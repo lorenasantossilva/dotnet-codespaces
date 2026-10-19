@@ -1,3 +1,4 @@
+using System.Collections.Concurrent;
 using System.Globalization;
 using NotasApi.DTOs;
 using NotasApi.Models;
@@ -6,7 +7,9 @@ namespace NotasApi.Services
 {
     public class NotaFiscalService : INotaFiscalService
     {
-        private static readonly List<NotaFiscal> _notas = new();
+        private static readonly ConcurrentBag<NotaFiscal> _notas = new();
+        private static readonly CultureInfo _culturePtBr = new("pt-BR");
+        private static readonly TimeZoneInfo _fusoBrasilia = TimeZoneInfo.FindSystemTimeZoneById("America/Sao_Paulo");
 
         public NotaFiscalResponseDto Cadastrar(CriarNotaFiscalDto dto)
         {
@@ -15,7 +18,8 @@ namespace NotasApi.Services
                 NumeroNota = dto.NumeroNota,
                 Cliente = dto.Cliente,
                 Valor = dto.Valor,
-                DataEmissao = dto.DataEmissao
+                DataEmissao = dto.DataEmissao,
+                DataHoraCadastro = TimeZoneInfo.ConvertTimeFromUtc(DateTime.UtcNow, _fusoBrasilia)
             };
 
             lock (_notas)
